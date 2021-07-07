@@ -19,8 +19,8 @@ import com.baomidou.mybatisplus.core.toolkit.Assert;
 import com.baomidou.mybatisplus.core.toolkit.LambdaUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringPool;
 import com.baomidou.mybatisplus.core.toolkit.support.ColumnCache;
+import com.baomidou.mybatisplus.core.toolkit.support.LambdaMeta;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
-import com.baomidou.mybatisplus.core.toolkit.support.SerializedLambda;
 import org.apache.ibatis.reflection.property.PropertyNamer;
 
 import java.util.Arrays;
@@ -37,7 +37,7 @@ import static java.util.stream.Collectors.joining;
  */
 @SuppressWarnings("serial")
 public abstract class AbstractLambdaWrapper<T, Children extends AbstractLambdaWrapper<T, Children>>
-    extends AbstractWrapper<T, SFunction<T, ?>, Children> {
+        extends AbstractWrapper<T, SFunction<T, ?>, Children> {
 
     private Map<String, ColumnCache> columnMap = null;
     private boolean initColumnMap = false;
@@ -59,7 +59,8 @@ public abstract class AbstractLambdaWrapper<T, Children extends AbstractLambdaWr
     }
 
     protected String columnToString(SFunction<T, ?> column, boolean onlyColumn) {
-        return getColumn(LambdaUtils.resolve(column), onlyColumn);
+        ColumnCache cache = getColumnCache(column);
+        return onlyColumn ? cache.getColumn() : cache.getColumnSelect();
     }
 
     /**
@@ -67,19 +68,15 @@ public abstract class AbstractLambdaWrapper<T, Children extends AbstractLambdaWr
      * <p>
      * 如果获取不到列信息，那么本次条件组装将会失败
      *
-     * @param lambda     lambda 表达式
-     * @param onlyColumn 如果是，结果: "name", 如果否： "name" as "name"
      * @return 列
      * @throws com.baomidou.mybatisplus.core.exceptions.MybatisPlusException 获取不到列信息时抛出异常
-     * @see SerializedLambda#getImplClass()
-     * @see SerializedLambda#getImplMethodName()
      */
-    private String getColumn(SerializedLambda lambda, boolean onlyColumn) {
-        Class<?> aClass = lambda.getInstantiatedType();
-        tryInitCache(aClass);
-        String fieldName = PropertyNamer.methodToProperty(lambda.getImplMethodName());
-        ColumnCache columnCache = getColumnCache(fieldName, aClass);
-        return onlyColumn ? columnCache.getColumn() : columnCache.getColumnSelect();
+    protected ColumnCache getColumnCache(SFunction<T, ?> column) {
+        LambdaMeta meta = LambdaUtils.extract(column);
+        String fieldName = PropertyNamer.methodToProperty(meta.getImplMethodName());
+        Class<?> instantiatedClass = meta.getInstantiatedClass();
+        tryInitCache(instantiatedClass);
+        return getColumnCache(fieldName, instantiatedClass);
     }
 
     private void tryInitCache(Class<?> lambdaClass) {
@@ -97,7 +94,7 @@ public abstract class AbstractLambdaWrapper<T, Children extends AbstractLambdaWr
     private ColumnCache getColumnCache(String fieldName, Class<?> lambdaClass) {
         ColumnCache columnCache = columnMap.get(LambdaUtils.formatKey(fieldName));
         Assert.notNull(columnCache, "can not find lambda cache for this property [%s] of entity [%s]",
-            fieldName, lambdaClass.getName());
+                fieldName, lambdaClass.getName());
         return columnCache;
     }
 }
