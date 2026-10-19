@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2021, baomidou (jobob@qq.com).
+ * Copyright (c) 2011-2025, baomidou (jobob@qq.com).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,6 @@
  */
 package com.baomidou.mybatisplus.core.conditions.update;
 
-import com.baomidou.mybatisplus.core.toolkit.sql.SqlScriptUtils;
-import org.apache.ibatis.type.JdbcType;
-import org.apache.ibatis.type.TypeHandler;
-
 import java.io.Serializable;
 
 /**
@@ -28,7 +24,11 @@ import java.io.Serializable;
 public interface Update<Children, R> extends Serializable {
 
     /**
-     * ignore
+     * 设置 更新 SQL 的 SET 片段
+     *
+     * @param column 字段
+     * @param val    值
+     * @return children
      */
     default Children set(R column, Object val) {
         return set(true, column, val);
@@ -43,67 +43,16 @@ public interface Update<Children, R> extends Serializable {
      * @return children
      */
     default Children set(boolean condition, R column, Object val) {
-        return set(condition, column, val, null, null, null);
-    }
-
-    /**
-     * ignore
-     */
-    default Children set(R column, Object val, Class<? extends TypeHandler<?>> typeHandler) {
-        return set(true, column, val, typeHandler, null, null);
+        return set(condition, column, val, null);
     }
 
     /**
      * 设置 更新 SQL 的 SET 片段
      *
-     * @param condition 是否加入 set
-     * @param column    字段
-     * @param val       值
+     * @param column  字段
+     * @param val     值
+     * @param mapping 例: javaType=int,jdbcType=NUMERIC,typeHandler=xxx.xxx.MyTypeHandler
      * @return children
-     */
-    default Children set(boolean condition, R column, Object val, Class<? extends TypeHandler<?>> typeHandler) {
-        return set(condition, column, val, typeHandler, null, null);
-    }
-
-    /**
-     * ignore
-     */
-    default Children set(R column, Object val, Class<? extends TypeHandler<?>> typeHandler, JdbcType jdbcType) {
-        return set(true, column, val, typeHandler, jdbcType, null);
-    }
-
-    /**
-     * ignore
-     */
-    default Children set(boolean condition, R column, Object val, Class<? extends TypeHandler<?>> typeHandler, JdbcType jdbcType) {
-        return set(condition, column, val, typeHandler, jdbcType, null);
-    }
-
-    /**
-     * ignore
-     */
-    default Children set(R column, Object val, Class<? extends TypeHandler<?>> typeHandler, JdbcType jdbcType, Integer numericScale) {
-        return set(true, column, val, typeHandler, jdbcType, numericScale);
-    }
-
-    /**
-     * 设置 更新 SQL 的 SET 片段
-     *
-     * @param condition 是否加入 set
-     * @param column    字段
-     * @param val       值
-     * @return children
-     */
-    default Children set(boolean condition, R column, Object val, Class<? extends TypeHandler<?>> typeHandler, JdbcType jdbcType, Integer numericScale) {
-        String mapping = null;
-        if (condition) {
-            mapping = SqlScriptUtils.convertParamMapping(typeHandler, jdbcType, numericScale);
-        }
-        return set(condition, column, val, mapping);
-    }
-
-    /**
-     * ignore
      */
     default Children set(R column, Object val, String mapping) {
         return set(true, column, val, mapping);
@@ -121,19 +70,67 @@ public interface Update<Children, R> extends Serializable {
     Children set(boolean condition, R column, Object val, String mapping);
 
     /**
-     * ignore
+     * 设置 更新 SQL 的 SET 片段
+     *
+     * @param setSql set sql
+     *               例1: setSql("id=1")
+     *               例2: setSql("dateColumn={0}", LocalDate.now())
+     *               例4: setSql("type={0,javaType=int,jdbcType=NUMERIC,typeHandler=xxx.xxx.MyTypeHandler}", "待处理字符串")
+     * @return children
      */
-    default Children setSql(String sql) {
-        return setSql(true, sql);
+    default Children setSql(String setSql, Object... params) {
+        return setSql(true, setSql, params);
     }
 
     /**
      * 设置 更新 SQL 的 SET 片段
      *
-     * @param sql set sql
+     * @param condition 执行条件
+     * @param setSql    set sql
+     *                  例1: setSql("id=1")
+     *                  例2: setSql("dateColumn={0}", LocalDate.now())
+     *                  例4: setSql("type={0,javaType=int,jdbcType=NUMERIC,typeHandler=xxx.xxx.MyTypeHandler}", "待处理字符串")
      * @return children
      */
-    Children setSql(boolean condition, String sql);
+    Children setSql(boolean condition, String setSql, Object... params);
+
+    /**
+     * 字段自增变量 val 值
+     *
+     * @param column 字段
+     * @param val    变量值 1 字段自增 + 1
+     */
+    default Children setIncrBy(R column, Number val) {
+        return setIncrBy(true, column, val);
+    }
+
+    /**
+     * 字段自增变量 val 值
+     *
+     * @param condition 是否加入 set
+     * @param column    字段
+     * @param val       变量值 1 字段自增 + 1
+     */
+    Children setIncrBy(boolean condition, R column, Number val);
+
+    /**
+     * 字段自减变量 val 值
+     *
+     * @param column 字段
+     * @param val    变量值 1 字段自减 - 1
+     */
+    default Children setDecrBy(R column, Number val) {
+        return setDecrBy(true, column, val);
+    }
+
+    /**
+     * 字段自减变量 val 值
+     *
+     * @param condition 是否加入 set
+     * @param column    字段
+     * @param val       变量值 1 字段自减 - 1
+     */
+    Children setDecrBy(boolean condition, R column, Number val);
 
     /**
      * 获取 更新 SQL 的 SET 片段
